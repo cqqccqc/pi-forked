@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深入 Pi Agent：构建你自己的 Coding Agent — 交互式课件</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/typescript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<button class="mt" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="pw"><div class="pf" id="pb"></div></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-h">
+    <h2>🛠 深入 Pi Agent</h2>
+    <span>10章 · 交互式学习 · 编程实战</span>
+  </div>
+  <nav class="sidebar-nav" id="sn"></nav>
+  <div class="sidebar-f">
+    <button onclick="app.toggleTheme()" id="tb">🌙 暗色</button>
+    <span id="pt">0%</span>
+  </div>
+</aside>
+
+<main class="main" id="mc">
+  <div id="welcome-screen">
+    <h1>🛠 深入 Pi Agent：构建你自己的 Coding Agent</h1>
+    <p style="font-size:1.1rem;color:var(--text2);margin-bottom:28px;">以开源项目 Pi Agent 为教材，逐层拆解架构，最终实现你自己的 AI 编程助手</p>
+
+    <div class="ch-intro">
+      <h3>🎯 课程目标</h3>
+      <p>以 <strong>Pi Agent</strong> 真实开源项目为教材，逐层拆解 Coding Agent 的完整架构。</p>
+      <ul>
+        <li><strong>理解核心原理</strong>：Agent Loop、LLM 抽象、工具系统、会话管理</li>
+        <li><strong>掌握工程实践</strong>：分层架构、扩展系统、错误处理、安全机制</li>
+        <li><strong>动手编程</strong>：每章包含编程练习题，从读源码到写代码</li>
+        <li><strong>融会贯通</strong>：第10章串联全部知识，构建精简版 Agent</li>
+      </ul>
+    </div>
+
+    <div class="ch-intro">
+      <h3>📋 课程大纲</h3>
+      <table>
+      <tr><th>阶段</th><th>章节</th><th>内容</th></tr>
+      <tr><td>🔰 入门</td><td>1-2</td><td>概念入门、四层架构全景</td></tr>
+      <tr><td>🧠 大脑</td><td>3</td><td>LLM 抽象层：统一多 Provider 接口</td></tr>
+      <tr><td>❤️ 心脏</td><td>4</td><td>Agent Loop：双层 while 循环</td></tr>
+      <tr><td>🤲 手脚</td><td>5</td><td>7大核心工具系统</td></tr>
+      <tr><td>🧩 记忆</td><td>6</td><td>会话持久化与上下文管理</td></tr>
+      <tr><td>📋 规则</td><td>7</td><td>System Prompt 动态构建</td></tr>
+      <tr><td>🔌 扩展</td><td>8</td><td>插件/扩展系统</td></tr>
+      <tr><td>🛡️ 保障</td><td>9</td><td>错误处理、安全、重试</td></tr>
+      <tr><td>🏗️ 实践</td><td>10</td><td>220行代码构建精简版 Agent</td></tr>
+      </table>
+    </div>
+
+    <div class="callout cl-info">
+    <strong>💡 学习建议</strong><br>
+    建议按顺序学习，每章末尾有测验和编程题。不需要一次看完——每章独立，可按兴趣跳着看。
+    </div>
+
+    <p style="text-align:center;margin-top:24px;">
+      <button class="btn" onclick="app.navigateTo(1)" style="font-size:1rem;padding:10px 28px;">开始学习 →</button>
+    </p>
+  </div>
+</main>
+
+<button class="bt" id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script src="js/quiz.js"></script>
+<script src="js/diagrams.js"></script>
+<script src="js/app.js"></script>
+<script src="chapters/01-introduction.js"></script>
+<script src="chapters/02-architecture.js"></script>
+<script src="chapters/03-llm-abstraction.js"></script>
+<script src="chapters/04-agent-loop.js"></script>
+<script src="chapters/05-tool-system.js"></script>
+<script src="chapters/06-session-management.js"></script>
+<script src="chapters/07-system-prompt.js"></script>
+<script src="chapters/08-extension-system.js"></script>
+<script src="chapters/09-security-reliability.js"></script>
+<script src="chapters/10-build-your-own.js"></script>
+<script>app.init()</script>
+</body>
+</html>

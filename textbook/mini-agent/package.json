@@ -1,0 +1,10 @@
+{
+  "name": "mini-coding-agent",
+  "version": "1.0.0",
+  "description": "深入 Pi Agent 课件配套 —— 自己实现一个可运行的 TUI Coding Agent",
+  "type": "module",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  }
+}
