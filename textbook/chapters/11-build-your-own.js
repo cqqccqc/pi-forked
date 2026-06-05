@@ -1,6 +1,6 @@
 window.__chapters = window.__chapters || [];
 window.__chapters.push({
-  id: 10,
+  id: 11,
   title: '动手构建：一个真实可运行的 TUI Coding Agent',
   desc: '用 300 行 Node.js 代码构建一个真正能跑的终端 Coding Agent — 支持流式输出、5个真实工具、交互式对话。',
 
@@ -16,7 +16,7 @@ window.__chapters.push({
     const s1 = document.createElement('div');
     s1.className = 'content-section';
     s1.innerHTML = `
-      <h2>10.1 成果预览：你能构建什么</h2>
+      <h2>11.1 成果预览：你能构建什么</h2>
       <p>本章结束时，你将拥有一个<strong>真实可运行的终端 Coding Agent</strong>：</p>
       <div class="code-block">
         <div class="code-label"><span class="file-path">终端运行效果</span></div>
@@ -65,7 +65,7 @@ $ node agent.js
     const s2 = document.createElement('div');
     s2.className = 'content-section';
     s2.innerHTML = `
-      <h2>10.2 项目结构：一个文件搞定一切</h2>
+      <h2>11.2 项目结构：一个文件搞定一切</h2>
       <p>我们不拆多个文件——<strong>所有代码在一个 agent.js 中</strong>，方便理解和运行：</p>
       <div class="ft"><span class="dir">mini-agent/</span>
 ├── <span class="file">package.json</span>    <span class="cmt"># type: module</span>
@@ -77,8 +77,8 @@ $ node agent.js
         <tr><td>LLM 调用</td><td>~60 行</td><td>流式 SSE 解析，逐 token 输出</td><td>第3章</td></tr>
         <tr><td>System Prompt</td><td>~20 行</td><td>定义 Agent 行为规则</td><td>第7章</td></tr>
         <tr><td>Agent Loop</td><td>~30 行</td><td>while 循环 + 工具调用</td><td>第4章</td></tr>
-        <tr><td>交互式 TUI</td><td>~30 行</td><td>readline 终端交互</td><td>—</td></tr>
-        <tr><td>配置 + 入口</td><td>~15 行</td><td>环境变量 + CLI 参数</td><td>第10章（对应docs）</td></tr>
+        <tr><td>交互式 TUI</td><td>~30 行</td><td>readline 终端交互（简化版），详见第10章 Pi 的完整 TUI 实现</td><td>第10章</td></tr>
+        <tr><td>配置 + 入口</td><td>~15 行</td><td>环境变量 + CLI 参数</td><td>—</td></tr>
       </table>
     `;
     container.appendChild(s2);
@@ -87,7 +87,7 @@ $ node agent.js
     const s3 = document.createElement('div');
     s3.className = 'content-section';
     s3.innerHTML = `
-      <h2>10.3 Step 1：实现 5 个真实工具</h2>
+      <h2>11.3 Step 1：实现 5 个真实工具</h2>
       <p>每个工具遵循统一接口：<code>{ name, description, parameters(JSON Schema), execute(args) }</code>。LLM 通过 JSON Schema 知道如何调用，Agent Loop 通过 execute() 执行。</p>
 
       <h3>read_file — 读取文件</h3>
@@ -187,7 +187,7 @@ $ node agent.js
     const s4 = document.createElement('div');
     s4.className = 'content-section';
     s4.innerHTML = `
-      <h2>10.4 Step 2：流式 LLM 调用（SSE 解析）</h2>
+      <h2>11.4 Step 2：流式 LLM 调用（SSE 解析）</h2>
       <p>这是整个 Agent 中最"技术"的部分——解析 OpenAI 兼容的 SSE（Server-Sent Events）流，逐 token 输出到终端。</p>
 
       <h3>核心：ReadableStream → 逐行 SSE → 逐 token 输出</h3>
@@ -274,7 +274,7 @@ $ node agent.js
     const s5 = document.createElement('div');
     s5.className = 'content-section';
     s5.innerHTML = `
-      <h2>10.5 Step 3：Agent Loop — 把所有东西串起来</h2>
+      <h2>11.5 Step 3：Agent Loop — 把所有东西串起来</h2>
       <p>回顾第4章：Agent Loop 就是一个 while 循环——调 LLM → 检查是否有工具调用 → 执行工具 → 结果送回 LLM → 循环。</p>
 
       <div class="code-block">
@@ -342,7 +342,7 @@ $ node agent.js
     const s6 = document.createElement('div');
     s6.className = 'content-section';
     s6.innerHTML = `
-      <h2>10.6 Step 4：交互式终端界面</h2>
+      <h2>11.6 Step 4：交互式终端界面</h2>
       <p>用 Node.js 内置的 <code>readline</code> 实现一个简洁的交互式 TUI：</p>
       <div class="code-block">
         <div class="code-label"><span class="file-path">agent.js — interactiveMode()</span></div>
@@ -381,7 +381,7 @@ $ node agent.js
     const s7 = document.createElement('div');
     s7.className = 'content-section';
     s7.innerHTML = `
-      <h2>10.7 运行你的 Agent</h2>
+      <h2>11.7 运行你的 Agent</h2>
       <div class="steps">
         <li>
           <strong>设置 API Key</strong>
@@ -415,7 +415,7 @@ node agent.js</code></pre></div>
     const s8 = document.createElement('div');
     s8.className = 'content-section';
     s8.innerHTML = `
-      <h2>10.8 对照前9章：你的 mini-agent 和 Pi Agent 的对应关系</h2>
+      <h2>11.8 对照前9章：你的 mini-agent 和 Pi Agent 的对应关系</h2>
       <table class="content-table">
         <tr><th>mini-agent 中</th><th>Pi Agent 中</th><th>差异</th></tr>
         <tr><td><code>callLLM()</code> (60行)</td><td><code>packages/ai/</code> (~5000行)</td><td>Pi 支持 9 种 API、35 个 Provider、延迟加载</td></tr>
@@ -433,7 +433,7 @@ node agent.js</code></pre></div>
     const s9 = document.createElement('div');
     s9.className = 'content-section';
     s9.innerHTML = `
-      <h2>10.9 课程总结</h2>
+      <h2>11.9 课程总结</h2>
       <table class="content-table">
         <tr><th>章节</th><th>内容</th><th>在 Pi Agent 中的位置</th></tr>
         <tr><td>1-2</td><td>概念入门 + 架构全景</td><td>建立对 Coding Agent 的整体认知</td></tr>

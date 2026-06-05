@@ -144,7 +144,8 @@ window.__chapters.push({
         <tr><td>📋 规则</td><td>第7章</td><td>System Prompt 如何给 Agent 设定行为规范</td></tr>
         <tr><td>🔌 扩展</td><td>第8章</td><td>插件系统：如何给 Agent 添加新能力</td></tr>
         <tr><td>🛡️ 保障</td><td>第9章</td><td>错误处理、安全机制、重试策略</td></tr>
-        <tr><td>🏗️ 实践</td><td>第10章</td><td>动手构建一个精简版 Coding Agent</td></tr>
+        <tr><td>🖥️ TUI</td><td>第10章</td><td>终端 UI：差分渲染、组件系统、键盘处理</td></tr>
+        <tr><td>🏗️ 实践</td><td>第11章</td><td>动手构建一个精简版 Coding Agent</td></tr>
       </table>
       <p style="margin-top:20px;">不需要一次看完所有章节。每一章都是独立的，你可以根据自己的兴趣跳着看。</p>
       <p>准备好了吗？让我们开始吧！ 🚀</p>
@@ -193,7 +194,7 @@ async function main() {
   }
 }</code></pre>
       </div>
-      <p>这个启动流程串联了后续所有章节的知识点——配置系统（第10章对应 settings 文档）、扩展系统（第8章）、会话管理（第6章）、三种运行模式（interactive / rpc / print）。</p>
+      <p>这个启动流程串联了后续所有章节的知识点——配置系统（第2章工程化实践 + settings 文档）、扩展系统（第8章）、会话管理（第6章）、三种运行模式（interactive / rpc / print）。</p>
 
       <h3>核心类型：AgentSession</h3>
       <p><code>AgentSession</code> 是 coding-agent 包的核心类，位于 <code>packages/coding-agent/src/core/agent-session.ts</code>。它把 agent 运行时、工具系统、会话管理、扩展系统全部串联在一起：</p>
