@@ -708,130 +708,186 @@ prompt += \`\\nCurrent working directory: \${promptCwd}\`;</code></pre>
       Diagrams.drawCacheModel(cacheDiv);
     }
 
-    // === Section 10:
+    // === Section 10: 消息处理与斜杠命令 ===
     const s9 = document.createElement('div');
     s9.className = 'content-section';
     s9.innerHTML = `
-      <h2>7.10 消息处理：用户输入到 Agent Loop 的完整链路</h2>
-      <p>System Prompt 准备好之后，Agent 等待用户输入。但用户的输入不一定都是"任务描述"——Pi 支持<strong>斜杠命令</strong>、<strong>Prompt 模板调用</strong>、<strong>技能调用</strong>等多种交互方式。让我们看看一条用户输入在到达 Agent Loop 之前经历了什么。</p>
+      <h2>7.10 消息处理：斜杠命令的完整分发机制</h2>
+      <p>用户在 Pi 的终端输入框里输入的不一定是自然语言任务。以 <code>/</code> 开头的内容会被<strong>斜杠命令系统</strong>拦截处理——20 个内置命令 + 动态注册的扩展/Prompt/Skill 命令，全部合并到统一的自动补全列表中。</p>
 
-      <h3>7.10.1 入口：setupEditorSubmitHandler</h3>
-      <p>在交互模式下，用户输入通过终端编辑器提交。提交后的处理逻辑在 <code>interactive-mode.ts</code> 中：</p>
+      <h3>7.10.1 两条分发路径</h3>
+      <p>用户按 Enter 提交后，<code>interactive-mode.ts</code> 中的 <code>setupEditorSubmitHandler</code> 是唯一入口：</p>
       <div class="code-block">
         <div class="code-label"><span class="file-path">packages/coding-agent/src/modes/interactive/interactive-mode.ts</span></div>
         <pre><code class="language-typescript">this.defaultEditor.onSubmit = async (text: string) => {
   text = text.trim();
   if (!text) return;
 
-  // ① 先检查是否斜杠命令
-  if (text === "/settings") { this.showSettingsSelector(); return; }
+  // 路径 1：精确匹配内置命令 → 直接执行，不进入 Agent Loop
+  if (text === "/settings")  { this.showSettingsSelector(); return; }
   if (text === "/model" || text.startsWith("/model ")) {
-    await this.handleModelCommand(/*...*/); return;
+    await this.handleModelCommand(searchTerm); return;
   }
-  if (text === "/export") { await this.handleExportCommand(text); return; }
-  if (text === "/new") { await this.handleNewSessionCommand(); return; }
-  // ... 20 个内置命令
+  if (text === "/export")    { await this.handleExportCommand(text); return; }
+  if (text === "/compact")   { await this.handleCompactCommand(text); return; }
+  if (text === "/new")       { await this.handleNewSessionCommand(); return; }
+  if (text === "/fork")      { /* ... */ return; }
+  // ... 20 个内置命令，每个都是独立的 if 分支
 
-  // ② 再检查是否扩展命令 / prompt 模板 / 技能命令
+  // 路径 2：未匹配到内置命令，但以 / 开头 → 分发给扩展系统
   if (text.startsWith("/")) {
     const result = await this.extensionRunner.emitCommand({ text });
     if (result?.handled) return;  // 扩展处理了，不进入 Agent Loop
   }
 
-  // ③ 都不是 → 进入 Agent Loop
+  // 路径 3（兜底）：普通文本 → 作为任务描述进入 Agent Loop
   await this.handleNewTask(text);
 };</code></pre>
       </div>
 
-      <h3>7.10.2 四类命令来源</h3>
-      <p>Pi 的斜杠命令来自<strong>四个不同的来源</strong>，统一合并到一个自动补全列表中：</p>
+      <p>三条路径的优先级：<strong>内置命令 → 扩展/Prompt/Skill 命令 → Agent Loop</strong>。这是一个"先拦截，后兜底"的设计。</p>
+
+      <h3>7.10.2 内置命令完整列表（20个）</h3>
+      <p>定义在 <code>packages/coding-agent/src/core/slash-commands.ts</code>：</p>
+      <div class="code-block">
+        <div class="code-label"><span class="file-path">packages/coding-agent/src/core/slash-commands.ts — BUILTIN_SLASH_COMMANDS</span></div>
+        <pre><code class="language-typescript">export const BUILTIN_SLASH_COMMANDS: ReadonlyArray&lt;BuiltinSlashCommand&gt; = [
+  { name: "settings",      description: "Open settings menu" },
+  { name: "model",         description: "Select model (opens selector UI)" },
+  { name: "scoped-models", description: "Enable/disable models for Ctrl+P cycling" },
+  { name: "export",        description: "Export session (HTML default, or .html/.jsonl)" },
+  { name: "import",        description: "Import and resume a session from a JSONL file" },
+  { name: "share",         description: "Share session as a secret GitHub gist" },
+  { name: "copy",          description: "Copy last agent message to clipboard" },
+  { name: "name",          description: "Set session display name" },
+  { name: "session",       description: "Show session info and stats" },
+  { name: "changelog",     description: "Show changelog entries" },
+  { name: "hotkeys",       description: "Show all keyboard shortcuts" },
+  { name: "fork",          description: "Create a new fork from a previous user message" },
+  { name: "clone",         description: "Duplicate the current session" },
+  { name: "tree",          description: "Navigate session tree (switch branches)" },
+  { name: "login",         description: "Configure provider authentication" },
+  { name: "logout",        description: "Remove provider authentication" },
+  { name: "new",           description: "Start a new session" },
+  { name: "compact",       description: "Manually compact the session context" },
+  { name: "resume",        description: "Resume a different session" },
+  { name: "reload",        description: "Reload keybindings, extensions, skills, prompts, and themes" },
+  { name: "quit",          description: "Quit the application" },
+];</code></pre>
+      </div>
+
+      <h3>7.10.3 四类命令来源的合并</h3>
+      <p>内置命令只是冰山一角。完整的自动补全列表来自四个独立来源，统一合并：</p>
       <table class="content-table">
-        <tr><th>来源</th><th>数量</th><th>示例</th><th>实现</th></tr>
+        <tr><th>来源</th><th>定义位置</th><th>示例</th></tr>
         <tr>
           <td><strong>内置命令</strong></td>
-          <td>20 个</td>
-          <td><code>/settings</code>, <code>/model</code>, <code>/new</code>, <code>/compact</code>, <code>/fork</code>, <code>/tree</code>, <code>/export</code>, <code>/quit</code></td>
-          <td><code>BUILTIN_SLASH_COMMANDS</code> 常量 + 逐个 if-else 分发</td>
+          <td><code>slash-commands.ts</code> 中的 <code>BUILTIN_SLASH_COMMANDS</code> 数组</td>
+          <td><code>/settings</code>, <code>/model</code>, <code>/compact</code>, <code>/fork</code>, <code>/quit</code></td>
         </tr>
         <tr>
           <td><strong>Prompt 模板</strong></td>
-          <td>动态</td>
-          <td><code>/review</code>（来自 .pi/prompts/review.md）</td>
-          <td><code>promptTemplates.map()</code> 自动注册为命令</td>
+          <td><code>.pi/prompts/</code> 目录下的 <code>.md</code> 文件</td>
+          <td><code>/review</code>（来自 <code>.pi/prompts/review.md</code>）</td>
         </tr>
         <tr>
           <td><strong>扩展注册</strong></td>
-          <td>动态</td>
-          <td>自定义命令（扩展通过 <code>registerCommand()</code> 注册）</td>
-          <td><code>extensionRunner.getRegisteredCommands()</code></td>
+          <td>扩展通过 <code>pi.registerCommand()</code> 在工厂函数中注册</td>
+          <td>自定义命令，如 <code>/deploy</code></td>
         </tr>
         <tr>
           <td><strong>技能命令</strong></td>
-          <td>动态</td>
-          <td><code>/skill:my-skill</code>（来自 .pi/skills/my-skill.md）</td>
-          <td>每个 Skill 自动生成 <code>/skill:&lt;name&gt;</code> 命令</td>
+          <td><code>.pi/skills/</code> 目录下的 <code>.md</code> 文件</td>
+          <td><code>/skill:my-skill</code>（来自 <code>.pi/skills/my-skill.md</code>）</td>
         </tr>
       </table>
 
       <div class="code-block">
-        <div class="code-label"><span class="file-path">interactive-mode.ts — 四源合并</span></div>
-        <pre><code class="language-typescript">// 1. 内置命令
-const slashCommands = BUILTIN_SLASH_COMMANDS.map(c => ({ name: c.name, ... }));
+        <div class="code-label"><span class="file-path">interactive-mode.ts — 四源合并为统一自动补全</span></div>
+        <pre><code class="language-typescript">// 1. 内置命令 → SlashCommand 格式
+const slashCommands = BUILTIN_SLASH_COMMANDS.map(c => ({ name: c.name, description: c.description }));
 
-// 2. Prompt 模板 → 命令
+// 2. Prompt 模板 → SlashCommand 格式
 const templateCommands = this.session.promptTemplates.map(cmd => ({
-  name: cmd.name, description: cmd.description, ...
+  name: cmd.name, description: cmd.description, argumentHint: cmd.argumentHint,
 }));
 
-// 3. 扩展命令
+// 3. 扩展注册的命令（过滤与内置同名的）
 const extensionCommands = this.session.extensionRunner
   .getRegisteredCommands()
   .filter(cmd => !builtinCommandNames.has(cmd.name));
 
-// 4. 技能命令
+// 4. Skill 命令（/skill:<name> 格式）
 const skillCommandList = this.session.resourceLoader.getSkills().skills
   .map(skill => ({ name: \`skill:\${skill.name}\`, description: skill.description }));
 
-// 合并为统一的自动补全列表
+// 合并为统一的 CombinedAutocompleteProvider
 return new CombinedAutocompleteProvider([
   ...slashCommands, ...templateCommands, ...extensionCommands, ...skillCommandList
 ]);</code></pre>
       </div>
 
-      <h3>7.10.3 Skill 命令的工作原理</h3>
-      <p>当用户输入 <code>/skill:my-skill</code> 时，Pi 不会把它当作普通的 agent prompt。而是：</p>
+      <h3>7.10.4 Skill 命令的完整流程</h3>
+      <p>当用户输入 <code>/skill:my-skill</code>：</p>
       <div class="step-list">
         <li>
-          <h4>匹配命令名</h4>
-          <p>TUI 层检查输入是否匹配 <code>/skill:&lt;name&gt;</code> 模式，找到对应的 skill 文件路径</p>
+          <h4>TUI 层匹配 <code>/skill:&lt;name&gt;</code> 模式</h4>
+          <p>命令名匹配后，找到对应的 <code>.pi/skills/my-skill.md</code> 文件路径</p>
         </li>
         <li>
-          <h4>加载 Skill 内容</h4>
-          <p>读取 <code>.pi/skills/my-skill.md</code> 文件，解析 frontmatter 和正文</p>
+          <h4>读取并解析 Skill 文件</h4>
+          <p>提取 YAML frontmatter（name, description, disableModelInvocation 等）和 Markdown 正文</p>
         </li>
         <li>
-          <h4>注入为 System Prompt 的一部分</h4>
-          <p>Skill 的正文内容被注入到 System Prompt 的附加部分（appendSystemPrompt），告诉 LLM "用户激活了这个技能"</p>
+          <h4>注入 System Prompt 附加部分</h4>
+          <p>Skill 正文被追加到 <code>appendSystemPrompt</code> 中，LLM 在下一轮就能看到 "用户激活了此技能" 的上下文</p>
         </li>
         <li>
-          <h4>进入 Agent Loop</h4>
-          <p>剩余文本（命令后面的参数）作为用户消息，进入正常的 Agent Loop</p>
+          <h4>其余参数作为用户消息，进入 Agent Loop</h4>
+          <p>命令名后面的文本（如 <code>/skill:review --strict</code> 中的 <code>--strict</code>）作为普通 user message 发送</p>
         </li>
       </div>
 
-      <h3>7.10.4 消息分发的设计哲学</h3>
-      <p>Pi 的消息处理体现了 <strong>"先拦截，后兜底"</strong> 的设计模式：</p>
+      <h3>7.10.5 与 Plugin/Extension 机制的关系</h3>
+      <p>斜杠命令只是 Pi 扩展能力的入口之一。完整的扩展体系还包括：</p>
       <table class="content-table">
-        <tr><th>优先级</th><th>匹配规则</th><th>处理方式</th></tr>
-        <tr><td>最高</td><td>精确匹配内置命令（<code>/settings</code>）</td><td>直接执行命令处理器，<strong>不进入 Agent Loop</strong></td></tr>
-        <tr><td>高</td><td>匹配内置命令 + 参数（<code>/model gpt</code>）</td><td>提取参数，执行命令处理器</td></tr>
-        <tr><td>中</td><td>匹配扩展/模板/技能命令（<code>/review</code>）</td><td>分发给扩展系统，扩展决定是否处理</td></tr>
-        <tr><td>低（兜底）</td><td>不匹配任何命令的普通文本</td><td>作为任务描述进入 <strong>Agent Loop</strong>（第4章）</td></tr>
+        <tr><th>能力</th><th>实现方式</th><th>对应 Claude Code</th></tr>
+        <tr><td><strong>Extension</strong></td><td>同进程 TypeScript 插件，通过 jiti 动态加载 <code>.pi/extensions/</code> 中的 <code>.ts</code> 文件</td><td>类似 VS Code 扩展（同进程）</td></tr>
+        <tr><td><strong>MCP Plugin</strong></td><td>进程隔离的外部工具，通过 <code>.mcp.json</code> 配置（兼容 Claude Code 格式），工具以 <code>mcp__&lt;server&gt;__&lt;tool&gt;</code> 命名</td><td>对应 Claude Code Plugin 的 MCP 模式</td></tr>
+        <tr><td><strong>extensionRunner.emitCommand()</strong></td><td>扩展可以注册自定义斜杠命令，所有未匹配的 <code>/xxx</code> 输入都分发给扩展系统</td><td>对应 Hooks 中的命令拦截</td></tr>
       </table>
-
-      <p>这个设计确保了：用户既可以用斜杠命令快速操作（换模型、导出会话、压缩上下文），也可以用自然语言描述任务让 Agent 自主完成。两者共用同一个输入框，无缝切换。</p>
+      <p>Pi 没有 Claude Code 的 <code>plugin.json</code> manifest 文件和声明式的 Commands/Agents/Hooks 定义，但 Extension API 通过 <code>registerCommand()</code>、<code>registerTool()</code>、<code>on("event")</code> 覆盖了同样的能力。</p>
     `;
     container.appendChild(s9);
+
+    // === 7.10.6 完整流程图 ===
+    const flowDiv = document.createElement('div');
+    flowDiv.className = 'content-section';
+    flowDiv.innerHTML = `
+      <h3>7.10.6 一条消息的完整旅程</h3>
+      <p>把上面的所有步骤串联起来，从用户按键到终端输出的 8 个阶段：</p>
+      <div class="diagram-container">
+        <div class="diagram-caption">▲ 用户输入 → Slash 命令检查 → AgentSession → Agent Loop → LLM → 工具执行 → 事件 → TUI 渲染</div>
+      </div>
+      <table class="content-table" style="margin-top:16px;">
+        <tr><th>阶段</th><th>位置</th><th>核心逻辑</th></tr>
+        <tr><td>① 用户输入</td><td><code>interactive-mode.ts:2491</code></td><td>Editor.onSubmit 回调触发</td></tr>
+        <tr><td>② 命令分发</td><td><code>interactive-mode.ts:2496-2582</code></td><td>/xxx → 内置命令直接执行，不进入 Agent Loop</td></tr>
+        <tr><td>③ 预处理</td><td><code>agent-session.ts:986</code></td><td>扩展命令检查 → Input 事件 → Skill 展开 → Streaming 排队</td></tr>
+        <tr><td>④ 上下文</td><td><code>agent-session.ts:896+1719</code></td><td>buildSystemPrompt() + buildSessionContext()</td></tr>
+        <tr><td>⑤ Agent Loop</td><td><code>agent-loop.ts:155</code></td><td>双层 while → streamAssistantResponse() → for await event</td></tr>
+        <tr><td>⑥ LLM 调用</td><td><code>stream.ts:58</code> → Provider</td><td>HTTP POST → SSE 解析 → EventStream.push()</td></tr>
+        <tr><td>⑦ 工具执行</td><td><code>agent-loop.ts:208</code></td><td>验证 → beforeToolCall → execute → afterToolCall → 结果入上下文</td></tr>
+        <tr><td>⑧ TUI 渲染</td><td><code>interactive-mode.ts:2679</code></td><td>订阅事件 → handleEvent() → requestRender() → 差分渲染</td></tr>
+      </table>
+    `;
+    container.appendChild(flowDiv);
+
+    // Render the message flow diagram
+    const msgFlowDiv = flowDiv.querySelector('.diagram-container');
+    if (msgFlowDiv && typeof Diagrams !== 'undefined') {
+      Diagrams.drawMessageFlow(msgFlowDiv);
+    }
   },
 
   quiz: [
@@ -878,6 +934,39 @@ return new CombinedAutocompleteProvider([
       ],
       answer: 2,
       explanation: '日期和工作目录信息被追加到 System Prompt 的最末尾。这样 LLM 在处理完所有规则和上下文后，最后看到的就是当前的环境信息。',
+    },
+    {
+      question: '一条用户消息从输入到 LLM 响应的完整路径中，以下哪个阶段最先发生？',
+      options: [
+        'AgentSession.prompt() 被调用',
+        'Editor.onSubmit 回调触发',
+        '斜杠命令检查（是否为 /xxx）',
+        'buildSystemPrompt() 构建 System Prompt',
+      ],
+      answer: 1,
+      explanation: 'Editor.onSubmit 是入口点。它首先触发斜杠命令检查 → 如果不是命令 → 才进入 AgentSession.prompt() → buildSystemPrompt()。',
+    },
+    {
+      question: '如果 Agent 正在工作中（isStreaming），用户又发了一条消息，Pi 会怎么做？',
+      options: [
+        '直接中断当前 Agent，启动新的 Agent Loop',
+        '忽略新消息',
+        '将新消息加入 steeringQueue 或 followUpQueue（取决于 streamingBehavior），当前 Agent 继续工作',
+        '同时运行两个 Agent Loop',
+      ],
+      answer: 2,
+      explanation: 'Pi 不会中断工作中的 Agent。新消息排队进入 steeringQueue（在内层循环中注入）或 followUpQueue（在 Agent 停止后处理），避免并发状态冲突。',
+    },
+    {
+      question: '斜杠命令 /compact 被输入后，它会进入 Agent Loop 吗？',
+      options: [
+        '会，所有输入最终都会进入 Agent Loop',
+        '不会，它匹配 BUILTIN_SLASH_COMMANDS，在 onSubmit 中直接执行 handleCompactCommand() 并 return',
+        '会，但只执行一次',
+        '取决于当前是否在 streaming',
+      ],
+      answer: 1,
+      explanation: '内置斜杠命令（/compact, /settings, /model 等）在 Editor.onSubmit 中精确匹配后直接执行命令处理器并 return，不进入 Agent Loop。只有不匹配任何命令的普通文本才交给 LLM。',
     },
   ],
 

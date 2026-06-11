@@ -322,6 +322,91 @@ const Diagrams = {
     container.innerHTML += svg;
   },
 
+  /** 绘制消息完整处理流程 */
+  drawMessageFlow(container) {
+    const w = this._w(container, 660);
+    let svg = S.open(w, 540);
+
+    const cx = Math.floor(w / 2);
+    const rx = cx + 160;
+
+    // 1. 用户输入
+    svg += R(cx - 65, 10, 130, 30, '#6c5ce7');
+    svg += T(cx, 29, '用户按键 Enter', 11, '#6c5ce7', 'bold', 'middle');
+    svg += A(cx, 40, cx, 56, '#aaa');
+
+    // 2. onSubmit 回调
+    svg += R(cx - 75, 58, 150, 30, '#e17055', 0.12);
+    svg += T(cx, 77, 'Editor.onSubmit', 10, '#e17055', 'bold', 'middle');
+    svg += A(cx, 88, cx, 104, '#aaa');
+
+    // 3. 斜杠命令检查
+    svg += D(cx, 124, 140, 40, '#f59e0b');
+    svg += T(cx, 120, '/ 开头?', 9, '#f59e0b', 'bold', 'middle');
+    svg += T(cx, 136, '(斜杠命令?)', 8, '#888', 'normal', 'middle');
+
+    // Yes branch right → 内置命令
+    svg += A(cx + 70, 124, rx - 65, 124, '#f59e0b');
+    svg += R(rx - 130, 108, 130, 30, '#f59e0b', 0.1);
+    svg += T(rx - 65, 127, '内置命令执行', 9, '#f59e0b', 'bold', 'middle');
+    svg += T(rx - 65, 148, '(不进入Agent Loop)', 8, '#888', 'normal', 'middle');
+
+    // No branch down → AgentSession.prompt
+    svg += A(cx, 144, cx, 170, '#aaa');
+    svg += T(cx + 50, 160, '否', 8, '#aaa', 'normal', 'start');
+
+    // 4. AgentSession.prompt
+    svg += R(cx - 85, 172, 170, 56, '#0984e3', 0.12);
+    svg += T(cx, 192, 'AgentSession.prompt()', 11, '#0984e3', 'bold', 'middle');
+    svg += T(cx, 210, 'Skill展开 · Input事件 · 上下文构建', 8, '#888', 'normal', 'middle');
+    svg += A(cx, 228, cx, 244, '#aaa');
+
+    // 5. System Prompt + Context
+    svg += R(cx - 85, 246, 170, 30, '#00b894', 0.1);
+    svg += T(cx, 265, 'buildSystemPrompt() + buildContext()', 9, '#00b894', 'bold', 'middle');
+    svg += A(cx, 276, cx, 292, '#aaa');
+
+    // 6. Agent Loop
+    svg += R(cx - 65, 294, 130, 48, '#6c5ce7', 0.15);
+    svg += T(cx, 312, 'Agent Loop', 12, '#6c5ce7', 'bold', 'middle');
+    svg += T(cx, 330, 'runLoop() while循环', 9, '#888', 'normal', 'middle');
+    svg += A(cx, 342, cx, 358, '#aaa');
+
+    // 7. LLM调用
+    svg += R(cx - 75, 360, 150, 30, '#0984e3', 0.12);
+    svg += T(cx, 379, 'streamSimple() → HTTP SSE', 9, '#0984e3', 'bold', 'middle');
+    svg += A(cx, 390, cx, 406, '#aaa');
+
+    // 8. 决策：有工具调用?
+    svg += D(cx, 424, 140, 40, '#6c5ce7');
+    svg += T(cx, 420, '有工具调用?', 9, '#6c5ce7', 'bold', 'middle');
+    svg += T(cx, 436, '(toolUse?)', 8, '#888', 'normal', 'middle');
+
+    // Yes → 工具执行
+    svg += A(cx + 70, 424, rx - 65, 424, '#e17055');
+    svg += R(rx - 130, 408, 130, 30, '#e17055', 0.1);
+    svg += T(rx - 65, 427, 'executeToolCalls()', 9, '#e17055', 'bold', 'middle');
+    svg += T(rx - 65, 448, '验证·钩子·执行·结果', 8, '#888', 'normal', 'middle');
+
+    // 循环回 LLM
+    svg += A(rx - 65, 438, rx - 65, 460, '#aaa', true);
+    svg += A(rx - 65, 462, cx, 462, '#aaa', true);
+    svg += A(cx, 462, cx, 390, '#aaa', true);
+    svg += T(cx + 10, 430, '循环', 7, '#888', 'normal', 'start');
+
+    // No → 事件推送TUI
+    svg += A(cx, 444, cx, 470, '#aaa');
+    svg += T(cx + 15, 460, '否', 8, '#aaa', 'normal', 'start');
+
+    // 9. TUI渲染
+    svg += R(cx - 75, 472, 150, 42, '#00b894', 0.1);
+    svg += T(cx, 488, '事件 → TUI.handleEvent()', 10, '#00b894', 'bold', 'middle');
+    svg += T(cx, 504, 'message_update · 差分渲染', 8, '#888', 'normal', 'middle');
+
+    svg += S.close;
+    container.innerHTML += svg;
+  },
+
   /** 绘制三断点 KV Cache 模型 */
   drawCacheModel(container) {
     const w = this._w(container, 660);
